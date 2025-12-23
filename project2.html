@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Project Placeholder 2</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript>
+        <link rel="stylesheet" href="assets/css/noscript.css" />
+    </noscript>
+</head>
+
+<body class="is-preload">
+
+    <div id="wrapper">
+
+        <header id="header">
+            <a href="index.html" class="logo">Eden Growney</a>
+        </header>
+
+        <nav id="nav">
+            <ul class="links">
+                <li class="active"><a href="index.html">Projects</a></li>
+                <li><a href="generic.html">Work Experience</a></li>
+                <li><a href="elements.html">Education</a></li>
+                <li><a href="involvement.html">Involvement</a></li>
+            </ul>
+        </nav>
+
+        <div id="main">
+            <section class="post">
+                <header class="major">
+                    <h1>Climbing Route Segmentation</h1>
+                </header>
+                <a href="#" class="image fit"><img src="images/project2_img_5.png" alt="Climbing holds segmentation" /></a>
+                <h2>Introduction</h2>
+                <p>We investigate classifying holds in an image to identify indoor climbing routes. Our pipeline segments holds, classifies hold type and orientation, represents color robustly (HSV), and groups holds into route candidates using K-means clustering.</p>
+
+                <h2>Dataset</h2>
+                <p>We curated 70 high-resolution gym images with ~1,600 annotated holds and 130 routes. Annotations include polygons, hold type, and route membership. Splits were made so no wall scene appears in multiple splits to force generalization.</p>
+
+                <h2>Methods</h2>
+                <ul>
+                    <li>Segmentation: pretrained Detectron2-based model; outputs converted to COCO format.</li>
+                    <li>Hold classification: ResNet-50 backbone with two heads for hold type (7 classes) and orientation (5 classes).</li>
+                    <li>Color representation: HSV hue average to reduce chalk/shadow effects; saturation/value stripped.</li>
+                    <li>Route grouping: K-means using mean hue and hold type (min-max scaled).</li>
+                </ul>
+
+                <h2>Results</h2>
+                <p>Segmentation recall on a five-image subset averaged ~0.985. Hold type accuracy ≈60% and orientation ≈70% on validation. K-means color-only grouping averaged ~0.756 vs ~0.655 when including hold type (results depend on image).</p>
+
+                <h2>Figures</h2>
+                <p>Example segmentation and classification visuals from the project:</p>
+                <div class="images-grid">
+                    <img src="images/project2_img_0.png" alt="fig0" />
+                    <img src="images/project2_img_1.png" alt="fig1" />
+                    <img src="images/project2_img_2.png" alt="fig2" />
+                    <img src="images/project2_img_3.png" alt="fig3" />
+                    <img src="images/project2_img_4.png" alt="fig4" />
+                    <img src="images/project2_img_5.png" alt="fig5" />
+                </div>
+
+                <h2>Future Work</h2>
+                <p>Explore clustering methods that combine numerical and categorical inputs, improve hold-type classifier, and increase annotation completeness to improve segmentation and downstream performance.</p>
+
+                <p>Repository: <a href="https://github.com/katie34634/ml_project_msai" target="_blank" rel="noopener noreferrer">https://github.com/katie34634/ml_project_msai</a></p>
+
+                <hr />
+            </section>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

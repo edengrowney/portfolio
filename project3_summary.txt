@@ -1,0 +1,222 @@
+# Menstrual Cycle Phase Prediction Using Multi-Modal Physiological and Self-Reported Data
+
+**Group:** Sigma Squad  
+**Members:** Jianchen Hong, Aryaan Peshoton, Natasha Dhanrajani, Eden Growney
+
+**Dataset Source:** mcPHASES Dataset (PhysioNet)  
+**Dataset URL:** https://www.physionet.org/content/mcphases/1.0.0/
+
+---
+
+## Executive Summary
+
+In this project, we propose an end-to-end machine learning solution for the task of cycle phase prediction that leverages the strength of this comprehensive multi-modal data combination, capturing physiological sensor data and hormone levels together with symptom reports. In addition, this work reports on the development of and results obtained from several challenging machine learning models in classifying the four different cycle phases: Menstrual, Follicular, Fertility, and Luteal.
+
+
+
+# 1. Introduction
+
+## 1.1 Project Motivation
+
+Traditional menstrual cycle tracking methods rely on symptoms and calendar estimates, which are often unreliable due to individual variation in cycle length, symptoms, and hormonal patterns. Wearable devices now offer objective physiological data that can improve phase prediction. By integrating HRV, sleep quality, stress, glucose measures, and hormone levels, we aimed to determine whether a multimodal model can outperform current tracking methods.
+
+## 1.2 Research Questions
+
+1. **Primary Objective:** Can the predictions made for each phase (Menstrual, Follicular, Fertility, Luteal) be correlated with actual physiological and self-reported symptoms in real-world scenarios?
+
+2. **Secondary Objectives:**
+  - What are the most characteristic physiological changes for each cycle phase?
+  - How are relationships between sleep, stress, and exercise expressed during different cycle phases?
+  - Do temporal patterns (lags and rolling windows) improve the accuracy of predictions?
+  - How do different machine learning architectures compare when dealing with this multi-classclassification problem?
+
+## 1.3 Methodology Overview
+
+The analysis uses an end-to-end pipeline that merges data from ten sources, applies feature engineering, and tests multiple advanced models with cross-validation to ensure reliable performance, while addressing class imbalance, missing data, and irregular observations.
+
+
+# 2. Datasets
+
+## 2.1 Data Source and Collection
+
+The mcPHASES (Menstrual Cycle PHysiological And Symptom Evaluation Study) data were retrieved from PhysioNet, which is a collection of physiological signals and associated data hosted at the MIT Laboratory for Computational Physiology. Data were generated in the Greater Toronto Area in Canada in 2022 for 50 subjects recruited via women’s health advocacy groups for a three-month period. Of this pool, 42 subjects gave their consent for data sharing, and this generated a very detailed data pool for about 90 days.
+
+## 2.2 Data Structure and Complexity
+
+In fact, this data poses many data engineering tasks because it is distributed in 23 CSVs, each of which holds different data modalities at different resolutions of time:
+- High frequency data: HRV values calculated every 5 seconds, resulting in over 436,000 records that need to be aggregated.
+- Medium frequency data: glucose level readings (every 5 minutes), heart rate, rate of respiration, and temperature readings.
+- Aggregates: Scores for sleep and stress, summaries of exercise, levels of hormones, and reported symptoms.
+- Sparse Data: Data on symptoms reported in an irregular manner and containing some missing data.
+
+There was a need for advanced integration techniques as a result of data diversity. There existed temporal misalignments, for example, measurements that are taken every 5 seconds and others that are reported on a daily basis.
+
+## 2.3 Data Tables Utilized
+
+For this analysis, we used 10 key data tables:
+
+1. **subject-info.csv** (42 participants): Demographic information including age, education, and employment status
+2. **hormones_and_selfreport.csv** (5,659 records): Daily hormone levels (estrogen, LH, PDG) and self-reported symptoms
+3. **heart_rate_variability_details.csv** (436,262 records): High-frequency HRV measurements requiring aggregation
+4. **resting_heart_rate.csv** (13,737 records): Resting heart rate measurements
+5. **computed_temperature.csv** (5,575 records): Nightly temperature measurements
+6. **respiratory_rate_summary.csv** (6,301 records): Respiratory rate summaries
+7. **sleep_score.csv** (5,308 records): Daily sleep quality scores
+8. **stress_score.csv** (7,932 records): Daily stress measurements
+9. **active_minutes.csv** (5,552 records): Activity level categorizations
+10. **exercise.csv** (7,282 records): Exercise session details including steps, calories, and duration
+
+## 2.4 Data Hosting
+
+Dataset link: https://www.physionet.org/content/mcphases
+In this case, for purposes of reproducibility and ease of access, the processed and combined data sets are provided on the same repository on PhysioNet. All code and preprocessing steps are otherwise documented to ensure full reproducibility of our results.
+
+# 3. Exploratory Data Analysis & Preprocessing
+
+## 3.1 Data Integration Challenge
+
+Another technical challenge in the project lies in the integration of ten different sources of data that have significantly different temporal scales. By itself, the HRV data contains 436,262 records, which is roughly two orders of magnitude larger than the base hormone data, and required specific aggregation methods to maintain the same level of granularity (daily observations).
+
+The integration process involved:
+
+- Temporal alignment: Aggregating all sources on daily intervals based on the participant ID and the interval of the study
+
+- Statistical aggregation: For high-frequency data (HRV every 5 seconds), we computed mean, standard deviation, minimum, and maximum values per day
+
+- Data handling: Dealing with incomplete data and imputing it in an optimal manner
+- Normalization of column names: Standardization of participant identifier names in files
+
+## 3.2 Data Loading and Initial Exploration
+
+
+## 3.3 Data Aggregation and Merging Strategy
+
+Aggregating the sensor data (every 5 seconds for HRV) into a daily frequency that matches the base hormone data interval remains the main issue. A strong aggregation function for this problem was designed to:
+- Group data by participant ID and day (study interval)
+- Calculate mean, std, min, and max of continuous variables
+- Dealing with missing values
+- Prefix aggregated columns to prevent naming conflicts
+
+
+By applying this approach, it was possible to convert 436,262 HRV records into daily aggregates.
+
+
+## 3.4 Target Variable Analysis
+
+The target or output variable (menstrual cycle phase) consists of four classes: Menstrual, Follicular, Fertility, and Luteal. There is a moderate level of class imbalance in this problem too. The Luteal class has the largest number of instances: 1,912, and the smallest number of instances belonged to the Menstrual class: 1,079. In this problem, SMOTE (Synthetic Minority Oversampling Technique) and class weights
+
+
+## 3.5 Advanced Feature Engineering
+
+Feature Engineering played an important role in understanding the temporal and biological intricacies of the cycle data. Various state-of-the-art methods were used.
+
+### 3.5.1 Hormonal Ratios
+Hornonal ratios (for example, LH/Estrogen, PDG/Estrogen) are much more informative in cycle phase predictions than absolute values. These ratios were calculated to reflect relative changes in the cartrages of reproduction.
+
+### 3.5.2 Temporal Features
+In light of the temporal aspect of menstruation cycles, the following characteristics were developed:
+- Lag features: Requires values from 1 and 3 days prior to capture current tendencies
+- Change features: Day-to-day changes to reflect rates of change
+- Rolling window statistics: Rolling means of parameters over 3-day and 7-day windows
+
+### 3.5.3 Interaction Features
+- Normal variation and outliers
+- HRV-Stress Interactions: Unraveling the Influence of Stress on Heart Rate Variability.
+
+These `engineered' features extract biologically relevant information from raw data and improve the portrayal of cycle dynamics.
+
+
+## 3.6 Missing Data Handling
+
+Handling Being longitudinal and multi-source in nature, missing data is inherent in this study. Two stages were involved:
+- Feature selection: Removed features that had more than 70% of their values missing.
+- Imputation: For missing values, median imputation was employed, and it took care of outliers that are generally observed in physiological signals.
+
+By applying this approach, it ensured that 69 of the original 115-engineered features were retained.
+
+
+## 3.7 Train-Test Split and Class Imbalance Handling
+
+We used stratified train-test splitting (75-25) to ensure proportional representation of all cycle phases in both sets. To address class imbalance, we applied SMOTE (Synthetic Minority Oversampling Technique), which generates synthetic samples for minority classes in the feature space, creating a more balanced training set without losing information through undersampling.
+
+
+# 4. Analysis & Modeling
+
+## 4.1 Model Selection Strategy
+
+We evaluated multiple machine learning architectures to identify the best approach for menstrual cycle phase prediction:
+
+1. **Gradient Boosting Ensembles:** XGBoost, CatBoost - excel at capturing complex feature interactions
+2. **Tree-based Ensembles:** Random Forest, Gradient Boosting - provide interpretability and robust performance
+3. **Deep Neural Networks:** PyTorch DNN, Keras LSTM - capture non-linear patterns and temporal dependencies
+4. **Attention-based Models:** TabNet - combines attention mechanisms with tabular data
+5. **Hierarchical Models:** Two-stage approach (fertility detection, then phase classification)
+
+Each model was evaluated using comprehensive metrics including accuracy, F1-score (weighted and macro), precision, recall, and balanced accuracy. We also employed stratified k-fold cross-validation to ensure robust performance estimates.
+
+## 4.2 Evaluation Metrics and Visualization
+
+For each model, we generated:
+- **Confusion matrices:** To visualize per-class performance
+- **ROC curves:** Multi-class one-vs-rest ROC curves with AUC scores
+- **Classification reports:** Detailed precision, recall, and F1 for each phase
+- **Feature importance:** To identify the most predictive physiological signals
+
+
+## 4.3 Cross-Validation for Robust Evaluation
+
+Before final model evaluation, we performed stratified 5-fold cross-validation on the training set to:
+1. Assess model stability across different data splits
+2. Identify potential overfitting
+3. Provide confidence intervals for performance metrics
+
+This rigorous evaluation approach ensures our results are generalizable and not dependent on a particular train-test split.
+
+
+## 4.4 Model Training and Evaluation
+
+We now train and evaluate each model. The models are presented in order of complexity, from traditional ensemble methods to deep learning architectures.
+
+
+## 4.5 Model Comparison and Results Summary
+
+After training all models, we compare their performance across multiple metrics. The results table below shows test set performance along with cross-validation scores where available.
+
+
+## 4.6 Feature Importance Analysis
+
+Understanding which features are most predictive of menstrual cycle phases provides biological insights and validates our feature engineering approach. We analyze feature importance using two complementary methods:
+
+1. **XGBoost Feature Importance:** Tree-based importance scores showing which features the model relies on most
+2. **Permutation Importance:** Model-agnostic importance by measuring performance degradation when features are randomly shuffled
+
+These analyses reveal which physiological signals (hormones, HRV, sleep, stress) are most informative for cycle phase prediction.
+
+
+## 4.7 Correlation Analysis
+
+To understand relationships between features and identify potential multicollinearity, we examine correlations among the top features. This analysis helps validate that our feature engineering captured distinct biological signals rather than redundant measurements.
+
+
+# 5. Summary
+
+## 5.1 Key Findings
+
+We showed that menstrual cycle phases can be predicted with solid accuracy using integrated physiological data and symptom reports. By combining 10 heterogeneous data sources, including over 436,000 HRV readings, we created daily features that enabled strong model performance. Feature engineering methods like hormonal ratios, temporal lags, and rolling windows were especially impactful, and ensemble models (XGBoost, CatBoost) performed best. The most predictive features reflected known biology, including estrogen, LH, PDG, HRV metrics, and sleep quality.
+
+## 5.2 Technical Achievements
+
+We built a unified dataset from files with widely different time resolutions, handled class imbalance using SMOTE, and validated results with stratified k-fold cross-validation. Testing eight model types allowed us to identify the most effective approaches for cycle phase prediction.
+
+## 5.3 Limitations and Future Work
+
+The dataset’s 42-participant sample limits generalizability, and missing data may introduce bias. Daily aggregation may overlook sub-daily patterns, and current models are population-level rather than personalized. Future work should include larger cohorts, richer data sources, personalized models, and real-time mobile applications.
+
+## 5.4 Conclusion
+
+Overall, this project demonstrates that menstrual cycle phases can be predicted using multi-modal physiological and self-reported data. The work highlights the value of careful data integration, feature engineering, and model comparison, providing a foundation for future personalized menstrual health tools.
+
+
+# 6. Generative AI Statement
+
+This project utilized generative AI tools to assist narration continuity, content linking, and planning data merging strategies.All project decisions, methodology choices, data interpretation, and final analysis were made by the project team. The scientific direction, model selection rationale, feature engineering strategies, and interpretation of results were entirely the work of the project team members. All code was reviewed, tested, and validated by team members and created through pair programming. All results and conclusions reflect the team's analysis and understanding of the data and models.

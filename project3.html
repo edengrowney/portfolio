@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Menstrual Cycle Phase Prediction</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript>
+        <link rel="stylesheet" href="assets/css/noscript.css" />
+    </noscript>
+</head>
+
+<body class="is-preload">
+
+    <div id="wrapper">
+
+        <header id="header">
+            <a href="index.html" class="logo">Eden Growney</a>
+        </header>
+
+        <nav id="nav">
+            <ul class="links">
+                <li class="active"><a href="index.html">Projects</a></li>
+                <li><a href="generic.html">Work Experience</a></li>
+                <li><a href="elements.html">Education</a></li>
+                <li><a href="involvement.html">Involvement</a></li>
+            </ul>
+        </nav>
+
+        <div id="main">
+            <section class="post">
+                <header class="major">
+                    <h1>Menstrual Cycle Phase Prediction</h1>
+                </header>
+
+                <a href="#" class="image fit"><img src="images/project3_img_0.png" alt="Menstrual Cycle Prediction" /></a>
+
+                <h2>Executive Summary</h2>
+                <p>End-to-end machine learning pipeline to predict menstrual cycle phases (Menstrual, Follicular, Fertility, Luteal) using multimodal data from the mcPHASES dataset (PhysioNet). The pipeline integrates physiological sensors, hormone measures, and self-reported symptoms with feature engineering and multiple ML models.</p>
+
+                <h2>Dataset</h2>
+                <p>Data from mcPHASES (PhysioNet) covering ~42 consented subjects and ~90 days per subject. The processed dataset merges 10 CSV sources (HRV, hormones, glucose, sleep, stress, activity, etc.) into daily aggregates.</p>
+
+                <h2>Methods</h2>
+                <ul>
+                    <li>Feature engineering: hormonal ratios, lags, rolling windows, interaction features.</li>
+                    <li>Handling imbalance: SMOTE and class weights; stratified train-test splits.</li>
+                    <li>Modeling: XGBoost, CatBoost, Random Forest, DNNs (PyTorch/Keras), attention/tabular models.</li>
+                    <li>Evaluation: Stratified k-fold CV, confusion matrices, ROC, AUC, F1, and feature importance analyses.</li>
+                </ul>
+
+                <h2>Results</h2>
+                <p>Ensemble tree models (XGBoost/CatBoost) achieved the strongest performance; feature engineering and hormonal ratios were highly informative. Limitations include dataset size and missing data.</p>
+
+                <h2>Figures</h2>
+                <div class="images-grid">
+                    <img src="images/project3_img_0.png" alt="fig0" />
+                    <img src="images/project3_img_1.png" alt="fig1" />
+                    <img src="images/project3_img_2.png" alt="fig2" />
+                    <img src="images/project3_img_3.png" alt="fig3" />
+                    <img src="images/project3_img_4.png" alt="fig4" />
+                    <img src="images/project3_img_5.png" alt="fig5" />
+                </div>
+
+                <h2>Conclusion & Future Work</h2>
+                <p>Results are promising; next steps include larger cohorts, personalized models, and richer temporal modeling for sub-daily signals.</p>
+
+                <hr />
+            </section>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

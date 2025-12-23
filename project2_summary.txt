@@ -1,0 +1,391 @@
+Climbing Route Segmentation 
+ 
+Introduction 
+We intend to investigate classifying holds in an image in order to identify indoor climbing routes. 
+Indoor climbing walls are constructed using a mix of handholds, such as "jugs," "crimps," 
+"pinches," "slopers," and many others, each designed to test different kinds of strength, balance, 
+and technique. A single route usually includes 5-15 holds of the same color, with a good number 
+of routes often reusing the same types of holds to create a consistent movement style or 
+difficulty. 
+ 
+Because modern climbing gyms change their routes frequently, being able to automatically 
+detect and group holds from photos could make it easier to document routes, analyze difficulty, 
+or build tools for climbers and route-setters. Our project aims to take a first step in that direction 
+by creating a pipeline of different models that classify the type and color of holds in wall images. 
+From there, we then determine whether we can reliably infer which specific holds belong to the 
+same route. In short, we want to see if a computer vision model can look at a cluttered climbing 
+wall and say: “These holds go together.” 
+ 
+More concretely, our goals were: 
+ 
+●​ Identify and categorize each hold by its color and shape/type. 
+●​ Group holds in route candidates based on those predicted attributes. 
+●​ Assess the approximation provided by this approach to real climbing routes, and realize 
+limitations of visual features in such tasks. 
+ 
+By doing so, we are trying to grasp whether automated route identification is possible and what 
+types of improvements (better labeling, more features, or alternative model architectures) would 
+be necessary for this to function properly in the real world. 
+ 
+Dataset 
+The backbone of our project is the custom dataset we built and curated for the task of indoor 
+climbing routes analysis. This dataset is made up of a set of high-resolution photos taken on real 
+climbing walls in a gym environment. All the images were manually annotated with polygons 
+tracing the actual shape of each hold, as well as the label of the hold type and the route it 
+belonged to. In all, our dataset contains 70 images, about 1,600 annotated holds, and 130 unique 
+routes. 
+ 
+
+
+Each image is of a dense visual scene with many holds from multiple routes, often overlapping 
+or partially occluded. Although routes are typically set to use one consistent color, raw color in 
+the images is frequently unreliable due to chalk coverage, irregular lighting, shading, and camera 
+variation. For this reason, we could not use color in any overly simple way, instead treating it as 
+a feature that needed additional processing and normalization before it could usefully contribute 
+to the model. This did affect how we gathered color information and how we combined it with 
+shape-based features. 
+ 
+Because the dataset is quite small by computer vision standards, we split the dataset carefully 
+into train, validation, and test sets such that no wall scene appears in more than one split. This 
+forces the model to generalize to entirely new wall configurations rather than memorizing 
+specific backgrounds or lighting conditions. 
+ 
+These characteristics of fine-grained hold types, imperfect but nonetheless useful color cues, 
+varied lighting, and limited dataset size played a significant role in dictating our modeling 
+choices. In effect, they led us to a multi-stage pipeline which combines supervised learning and 
+unsupervised techniques that make color signals more stable and capture structural information 
+not directly encoded within the labels. In practice, it was the constraint of the dataset that called 
+for creativity in feature extraction, especially in how we treated color as a transformed, rather 
+than raw, input. 
+ 
+ 
+Overview of Methods and Setup 
+Image Segmentation:  For the image segmentation stage, we used a pretrained Detectron2 model 
+sourced from a public Kaggle climbing-hold dataset. This model produces a structured set of 
+detections for every hold it identifies in an image. Each detection includes four components: a 
+bounding box marking the region where a hold is located, a confidence score between 0 and 1, a 
+predicted class label (“hold” or “volume”), and a segmentation mask that provides a pixel-level 
+outline of the object. In our images, nearly all detections were classified as holds. 
+To integrate these predictions into our workflow, we converted the model outputs into COCO 
+format. This required iterating through each image, extracting the bounding boxes, masks, and 
+class labels, assigning category IDs, and organizing everything into the standard COCO fields 
+for images, annotations, and categories. Reformatting the data in this way allowed us to reuse the 
+detections in later parts of the pipeline, including hold classification and route grouping. 
+For this segmentation step, we prioritized recall over precision. It is more important to detect all 
+holds that belong to a route than to avoid a few incorrect detections, since missing even one hold 
+results in an incomplete route prediction. Extra detections, on the other hand, can be filtered out 
+downstream. Because of this, our evaluation focused on measuring how many true holds the 
+
+
+model successfully captured. We estimated recall manually by reviewing a subset of the training 
+images and checking, hold by hold, whether the model’s output matched the ground-truth 
+annotations. 
+Color Representation: The biggest challenge with representing the color of a hold is that many 
+holds, especially smaller ones, have a significant amount of chalk on them that obscures the 
+color. We observed that when we simply took the average RGB value of the pixels in a hold, the 
+average color often turned out to be a shade very close to white instead of the true color. Instead, 
+we represented the color using HSV coordinates. With HSV, we were able to separate hue, 
+saturation, and value of the colors in the hold. Loosely, hue represents what we think of as the 
+actual color (red, orange, yellow…), saturation is a measure of how close the color is to white, 
+and value is a measure of how close the color is to black. We decided to strip away saturation 
+and value as an approximation of removing the parts of the color added by chalk and shadows. 
+Our hold segmentation model predicted the mask around the exact hold, so we were able to use 
+only the pixels in the hold and not in the background. Looking only at the average hue across all 
+of the pixels in a hold, we saw that even for holds that were completely covered in chalk and 
+would be hard to distinguish the color by the human eye, HSV was able to determine a hue that 
+was somewhat close to the true value. For example, a hold that was originally red but was 
+completely covered in chalk was identified as orange.  
+ 
+ 
+We know the true color of this hold should be red because of other holds in the route that are not 
+covered in chalk: 
+
+
+ 
+ 
+Hold Type & Orientation Classification: 
+After segmentation, we treat each hold as its own small image and try to classify it. The goal 
+here is to predict two things from the cropped hold image: (1) the hold’s type (for example jug, 
+crimp, sloper, etc.), and (2) the hold’s orientation. We set this up as a multi-task classification 
+problem so that the model learns both labels at the same time from the same visual features. 
+We used a ResNet-50 backbone pretrained on ImageNet, and replaced its final fully-connected 
+layer with two separate classification heads: one head that outputs logits for the 7 hold types, and 
+a second head that outputs logits for the 5 orientations. The backbone acts as a general feature 
+extractor, and the two heads specialize those features for each task. 
+Because our dataset is relatively small, we froze the ResNet backbone and trained only the two 
+heads. This keeps the model from overfitting too quickly and makes training more stable. The 
+final prediction for each task is taken as the argmax over the logits from the corresponding head. 
+During training, we used standard image augmentation (random flips, small rotations, and slight 
+brightness/contrast shifts), and we normalized using ImageNet mean and standard deviation. For 
+evaluation and inference we used a clean transform without augmentation so that predictions are 
+consistent. 
+Once the classifier was trained, we used it to generate predictions across a separate set of hold 
+crops. This step is meant to simulate what would happen in the full pipeline: segmentation gives 
+us hold regions, we crop them, then the classifier assigns each crop a type and an orientation. 
+In the prediction notebook, we load the trained weights from best_hold_model.pth, build a 
+dataset from a folder of hold crops/annotations, and run the model in evaluation mode over the 
+entire dataset using a DataLoader with shuffling disabled (so the output order stays consistent). 
+For each crop, we store the predicted type index and the predicted orientation index. 
+
+
+The final outputs are saved as NumPy arrays (pred_type_idx.npy and pred_orient_idx.npy). 
+These files become a convenient “bridge” to the route grouping stage, because we can reuse 
+predicted attributes without re-running the neural network every time we tune the clustering. 
+These predicted hold attributes are later used directly as inputs to the route grouping stage. 
+K-Means Clustering: Our K-means clustering model was used to determine which holds were 
+supposed to be grouped together as belonging to a single route. We used the mean hue and the 
+hold type as the features. Each feature was scaled using min-max scaling. We manually input the 
+number of clusters for each image. 
+Experimental Results 
+Image Segmentation: To evaluate the segmentation stage, we conducted a manual recall analysis 
+on a subset of five images from our dataset. These images were selected to represent a broad 
+range of real-world conditions, including different lighting environments; wall layouts; 
+background activity; and varying densities of holds, to ensure that our evaluation captured the 
+diversity of challenges present in the full dataset. 
+Because this verification required detailed, hold-by-hold inspection, we limited the analysis to 
+five images. Across this subset, the model achieved an average recall of 0.9847, indicating that it 
+successfully identified nearly all ground-truth holds. The following visualizations summarize the 
+detections and segmentation outputs used in this evaluation. Starting from the top left, recall 
+values are as follows: .9848, 1, .962025, 1, .9765.  
+ 
+
+
+Hold Classification Results (Quantitative): We next evaluate the performance of the hold type 
+and orientation classifier. Because the model is trained in a multi-task setting, we report both 
+training and validation loss across epochs, as well as task-specific accuracy for hold type and 
+orientation on the validation set. 
+ 
+
+
+Fig: Training and validation total loss (sum ​
+​
+Fig: Training and validation accuracy for hold       
+of type and orientation losses) over 20 epochs.                type classification.                
+Fig: Training and validation accuracy for hold  
+orientation classification. 
+ 
+On the validation set, the final hold type classification accuracy reached approximately 60%, 
+while orientation classification achieved a higher accuracy of approximately 70%. This 
+difference is expected, as orientation is a coarser visual attribute, whereas hold type often 
+depends on finer-grained shape details that are harder to distinguish, especially for smaller or 
+chalk-covered holds. 
+While overall accuracy gives a useful summary, it does not show which classes are most often 
+confused. To better understand the model’s errors, we compute confusion matrices on the 
+validation set for both hold type and hold orientation. 
+
+
+Fig: Confusion matrix for hold type prediction on the               Fig: Confusion matrix for hold orientation    
+validation set.                                                                                     prediction on the validation set.  
+ 
+Performance is strongest on common classes such as Jugs and Jibs, while rarer classes like 
+Pockets are more difficult due to limited training examples. Most errors occur between visually 
+similar categories such as Up and UpAng. 
+Hold Classification Results (Qualitative): To complement the quantitative results, we also 
+visually inspected individual predictions from the validation set. These examples help illustrate 
+when the classifier succeeds and highlight the types of errors it makes in practice. 
+Fig: Correct classification of a Crimp                Fig: Failure case where a Pinch hold is misclassified as a  
+hold with Up orientation. ​
+​
+          Jug, likely due to blurred texture and weak shape cues. 
+ 
+
+
+ 
+Fig: Correct classification of a Jug hold                          Fig: Failure case where a Crimp hold is             
+with Up orientation.                                                          misclassified as a Jug, likely due to blurred  
+                                                                                          texture and weak shape cues. 
+ 
+Analysis and Discussion 
+Image Segmentation: Our first segmentation model we experimented with was a fine-tuned SAM 
+model on our annotated dataset (seen in segmentation.ipynb). Although this model had high 
+accuracy, it also revealed a crucial weakness: given that the annotations themselves only labeled 
+a subset of the holds in each image, the supervised model learned to detect only the annotated 
+holds and consistently ignored the unlabeled ones. This generated segmentations that were 
+incomplete in a very systematic way, and these omissions then trickled down into failures 
+downstream. Later stages of the pipeline depend on identifying all holds in a route; even a small 
+number of missing detections undermined the reliability of the full system. 
+This mismatch of our task requirements and our training data motivated us to revisit our 
+approach. Rather than further fine-tuning the SAM-based model, we decided to investigate an 
+external model that was trained for exhaustive hold segmentation. We were thus able to find a 
+pre-trained model, Basic_Augmented_P2P3_DoubleTopK_NMS_2KIT, out of these targeting 
+the very same problem domain. We could now train on a much larger, more richly annotated 
+dataset, allowing generalization to a far wider range of holds compared to our directly supervised 
+SAM variant. By loading publicly available weights and configuration (on Kaggle), we 
+consistently saw higher recall, fewer missed holds, and by far more stable behavior across 
+various images of rock climbing walls. 
+This shift revealed an important lesson in our experimental design: the quality of segmentation 
+was less constrained by modeling choices and more by annotation completeness. In this context, 
+leveraging a pre-trained model, which was trained on fully-annotated data, provided a more 
+practical and robust solution than further fine-tuning on our limited annotation set. 
+
+
+Overall, the pretrained model (seen in model_weights.ipynb) performed reliably, and its 
+limitations were relatively minor. We noticed that it occasionally picked up a bit of background 
+activity, especially in busier images, and it sometimes missed holds that were far from the 
+camera or located on secondary walls that weren’t the main focus. We also saw that one specific 
+pentagon-shaped black hold type was detected less consistently, likely because it appeared 
+infrequently or looked visually similar to the wall. These observations suggest a few 
+straightforward improvements for future work, such as lightly blurring background areas to 
+reduce distractions or adding a small number of targeted annotations for the hold shapes that 
+were harder for the model to recognize. In general, the model handled most cases well, and the 
+issues we observed were manageable and expected given the variability in the images. 
+Hold Classification Analysis: For hold classification, the model achieves moderate accuracy, 
+with stronger performance on orientation than on hold type. This is likely because orientation is a 
+coarser visual attribute, while hold type distinctions can be subtle and depend on fine-grained 
+shape details. Errors are more common for rare classes and for holds that are heavily chalked or 
+partially occluded. Despite these limitations, the classifier provides sufficiently informative 
+predictions to support downstream route grouping experiments. 
+Note: We only included the ipynb file that contains the usage of the model on our dataset and  
+and the coco_output_predictions.json which contains the output of the pretrained model (in data 
+folder), in order to run this notebook you would have to install detectron within the program, 
+which we withheld for size storage in github.  
+K-Means Clustering: Looking through several different images with the predicted groups 
+labeled, it is apparent that the clustering is not very accurate overall. We decided to use a metric 
+that calculates the maximum percentage of holds in a cluster that are actually in the same route. 
+For example, let’s say an image has 5 clusters. For cluster 1, there are fifteen total holds. Perhaps 
+nine of them are red, three are blue, and three are green. We give that cluster a score of 9/15. 
+We picked this evaluation method because we found that more traditional clustering metrics were 
+not meaningful for this task. The silhouette method does not work well because our problem is 
+that the features we’re using (color and hold type) are not completely representative of the true 
+grouping. Our features are predictions themselves, which means that errors in the k-means output 
+are likely due to errors from previous predictions. 
+When we ran k-means, we noticed that for some of the images the clustering was more accurate 
+when only using color as the feature. We believe that this is due to the categorical nature of hold 
+type. When two holds had the same hold type, the distance in that dimension was 0 and that often 
+outweighed the distance between colors. Ideally, we would have wanted color to be more heavily 
+weighted than hold type as color is what the routes are actually based on. Hold type similarity 
+between holds in a route is pretty common, but it is not a strict requirement. Additionally, there 
+are only so many hold types, so overlap between different routes in a single image is very 
+common. 
+
+
+We randomly chose ten images to evaluate by hand for k-means with color only as well as 
+k-means with color and hold type. All images can be found in the github repository in the folder 
+outputs/image predictions. Here are a few select examples: 
+ 
+Scores: 
+Cluster 
+Color Only 
+Color and Hold Type 
+1 
+9/9 (red) 
+2/4 (green) 
+2 
+6/6 (yellow) 
+4/8 (yellow) 
+3 
+2/5 (green) 
+5/6 (red) 
+4 
+5/7 (pink) 
+3/5 (pink) 
+5 
+4/8 (orange) 
+15/29 (purple) 
+6 
+10/11 (purple) 
+4/10 (orange) 
+7 
+13/21 (blue) 
+5/5 (blue) 
+Average 
+0.735 
+0.622 
+Note: the color in parentheses refers to the color of the bounding boxes, not the color of the hold. 
+
+
+​
+Scores: 
+Cluster 
+Color Only 
+Color and Hold Type 
+1 
+5/8 (green) 
+3/4 (yellow) 
+2 
+12/13 (red) 
+12/26 (blue) 
+3 
+14/15 (blue) 
+6/11 (red) 
+4 
+10/10 (yellow) 
+3/4 (green) 
+Average 
+0.870 
+0.627 
+ 
+
+
+ 
+Scores: 
+Cluster 
+Color Only 
+Color and Hold Type 
+1 
+5/7 (green) 
+7/12 (green) 
+2 
+5/6 (purple) 
+12/16 (yellow) 
+3 
+8/8 (yellow) 
+7/7 (blue) 
+4 
+3/6 (blue) 
+4/7 (purple) 
+5 
+19/19 (red) 
+ 
+Average 
+0.810 
+0.726 
+ 
+Full results: 
+Scores: 
+Image ID 
+Color Only Average 
+Color and Hold Type Average 
+
+
+8285 
+0.735 
+0.622 
+8326 
+0.870 
+0.627 
+8301 
+0.810 
+0.726 
+7313 
+0.783 
+0.701 
+8310 
+0.895 
+0.687 
+7326 
+0.617 
+0.661 
+7458 
+0.825 
+0.767 
+8279 
+0.600 
+0.534 
+7463 
+0.712 
+0.662 
+7339 
+0.717 
+0.563 
+Average 
+0.756 
+0.655 
+ 
+Future work on this project would likely include exploring a different type of clustering method 
+that allows a combination of numerical and categorical data. We would like to be able to use 
+color as the primary deciding feature and hold type as a secondary feature. Additionally, 
+improving the hold type classification model would probably be necessary to more accurately 
+use that feature for clustering. 
+Githut repo: https://github.com/katie34634/ml_project_msai 
+ 
