@@ -1,0 +1,76 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Multiscale Neural Operator for GRMHD Forecasting</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript>
+        <link rel="stylesheet" href="assets/css/noscript.css" />
+    </noscript>
+</head>
+
+<body class="is-preload">
+
+    <div id="wrapper">
+
+        <header id="header">
+            <a href="index.html" class="logo">Eden Growney</a>
+        </header>
+
+        <nav id="nav">
+            <ul class="links">
+                <li class="active"><a href="index.html">Projects</a></li>
+                <li><a href="generic.html">Work Experience</a></li>
+                <li><a href="elements.html">Education</a></li>
+                <li><a href="involvement.html">Involvement</a></li>
+            </ul>
+        </nav>
+
+        <div id="main">
+            <section class="post">
+                <header class="major">
+                    <span class="date">2026</span>
+                    <h1>Multiscale Neural Operator for GRMHD Forecasting</h1>
+                    <p>Physics-informed deep learning for long-horizon black-hole accretion simulations</p>
+                </header>
+
+                <h2>Project Overview</h2>
+                <p>Developed a multiscale forecasting system for three-dimensional general relativistic magnetohydrodynamic (GRMHD) simulation data. The project uses neural operators to learn the evolution of fluid and magnetic-field states while preserving important physical behavior over long autoregressive rollouts.</p>
+
+                <h2>Approach</h2>
+                <ul>
+                    <li>Built on a hybrid 3D U-shaped neural operator that predicts residual changes between simulation states.</li>
+                    <li>Trained a fine model at a one-step horizon for detailed short-term dynamics and a coarse model at a 25-step horizon for more stable long-range predictions.</li>
+                    <li>Developed a multiscale inference strategy that combines fine rollouts with coarse-model corrections to reduce accumulated autoregressive error.</li>
+                    <li>Used physics-informed objectives covering fluid variables, magnetic fields, gradients, divergence constraints, mass conservation, and spectral behavior.</li>
+                </ul>
+
+                <h2>Engineering &amp; Infrastructure</h2>
+                <ul>
+                    <li>Implemented the training and evaluation pipeline in Python and PyTorch.</li>
+                    <li>Ran multi-GPU distributed training with PyTorch Distributed Data Parallel and Slurm on NERSC's Perlmutter supercomputer.</li>
+                    <li>Created stride-aware datasets, checkpoint management, development smoke tests, and separate workflows for fine and coarse models.</li>
+                    <li>Built evaluation tooling for per-variable error, autoregressive rollout accuracy, magnetic divergence, mass drift, shell-integrated profiles, and inference cost.</li>
+                </ul>
+
+                <h2>Technologies</h2>
+                <p>Python, PyTorch, neural operators, distributed data parallel training, Slurm, MPI, NumPy, scientific computing, and high-performance GPU computing.</p>
+
+                <h2>Impact</h2>
+                <p>The multiscale design targets a central limitation of autoregressive scientific forecasting: small one-step errors compound over time. Combining models trained at different temporal scales creates a path toward more accurate and physically consistent long-horizon simulation forecasts.</p>
+
+                <ul class="actions special">
+                    <li><a href="https://github.com/KevinFortuneCodes/neural_operator_msai_spring26" target="_blank" rel="noopener noreferrer" class="button">View Repository</a></li>
+                </ul>
+
+                <hr />
+            </section>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
