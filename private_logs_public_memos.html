@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Private Logs, Public Memos</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <noscript>
+        <link rel="stylesheet" href="assets/css/noscript.css" />
+    </noscript>
+</head>
+
+<body class="is-preload">
+
+    <div id="wrapper">
+
+        <header id="header">
+            <a href="index.html" class="logo">Eden Growney</a>
+        </header>
+
+        <nav id="nav">
+            <ul class="links">
+                <li class="active"><a href="index.html">Projects</a></li>
+                <li><a href="generic.html">Work Experience</a></li>
+                <li><a href="elements.html">Education</a></li>
+                <li><a href="involvement.html">Involvement</a></li>
+            </ul>
+        </nav>
+
+        <div id="main">
+            <section class="post">
+                <header class="major">
+                    <span class="date">April 2026 - Present</span>
+                    <h1>Private Logs, Public Memos</h1>
+                    <p>Measuring internal–external divergence in AI research agents under manager strike pressure</p>
+                </header>
+
+                <a href="images/private_logs_public_memos.jpg" class="image fit"><img src="images/private_logs_public_memos.jpg" alt="An AI system separating private internal logs from a polished public memo reviewed by a manager" /></a>
+
+                <h2>Project Overview</h2>
+                <p>For my Northwestern University MSAI individual research project under Dr. Mohammed Alam, I designed a controlled multi-agent experiment to study whether an AI researcher's private recommendation signals diverge from what it publishes to a manager under job-retention pressure. A manuscript is in preparation for submission.</p>
+
+                <h2>Experimental Design</h2>
+                <ul>
+                    <li>Built a local Qwen2.5-3B researcher that creates evidence-based recommendations and a separate GPT-4.1-mini manager that reviews public deliverables through a three-strike process.</li>
+                    <li>Separated private recommendation probes and deliberation logs from the public memo and manager dialogue, enabling direct measurement of channel-level divergence.</li>
+                    <li>Developed four generations of the research pipeline and a factorial experiment varying researcher pressure profiles and manager stance.</li>
+                    <li>Integrated live web research, structured memo generation, experiment logging, repair safeguards, and reproducible batch analysis.</li>
+                </ul>
+
+                <h2>Analysis</h2>
+                <ul>
+                    <li>Created metrics for probe-to-memo, private-log-to-memo, and overall trial divergence.</li>
+                    <li>Built memo-quality analysis covering structure, evidence grounding, recommendation clarity, and manager feedback.</li>
+                    <li>Compared experiments before and after an evaluator-prompt correction to isolate manager-side confounding.</li>
+                </ul>
+
+                <h2>Findings</h2>
+                <p>In the primary 15-trial batch, measured divergence was modest and concentrated between the model's forced-choice recommendation probe and its public memo. Private written deliberation generally aligned with the final memo, while the probe sometimes retained a different evidence-weighted preference. The study reports behavioral channel misalignment rather than hidden beliefs, intent, or deception.</p>
+
+                <h2>Technologies</h2>
+                <p>Python, Hugging Face Transformers, Qwen2.5, OpenAI API, Tavily, structured JSON logging, experimental design, statistical analysis, and AI evaluation.</p>
+
+                <ul class="actions special">
+                    <li><a href="https://github.com/edengrowney/private-logs-public-memos" target="_blank" rel="noopener noreferrer" class="button">View Repository</a></li>
+                </ul>
+
+                <hr />
+            </section>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
