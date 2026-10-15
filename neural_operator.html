@@ -52,16 +52,26 @@
                 <h2>Engineering &amp; Infrastructure</h2>
                 <ul>
                     <li>Implemented the training and evaluation pipeline in Python and PyTorch.</li>
-                    <li>Ran multi-GPU distributed training with PyTorch Distributed Data Parallel and Slurm on NERSC's Perlmutter supercomputer.</li>
+                    <li>Ran multi-GPU distributed training with PyTorch Distributed Data Parallel and Slurm on NERSC's Perlmutter supercomputer, with later benchmark work on NCSA Delta.</li>
                     <li>Created stride-aware datasets, checkpoint management, development smoke tests, and separate workflows for fine and coarse models.</li>
                     <li>Built evaluation tooling for per-variable error, autoregressive rollout accuracy, magnetic divergence, mass drift, shell-integrated profiles, and inference cost.</li>
                 </ul>
 
+                <h2>Fall 2026: Blind Benchmarking</h2>
+                <p>The next phase of the work is a fair, repeatable benchmark for H-AMR black-hole forecasting: given earlier simulation states, how well can a method predict future states? The protocol compares the specialized neural operator with frontier models such as Claude, Gemini, and GPT, plus persistence and mean-state baselines that copy or average the last observed state.</p>
+                <ul>
+                    <li>Give every method the same raw run-5000 input windows, output format, and forecast horizons (1, 10, 25, and 50 steps), including both direct long-horizon prediction and autoregressive rollout.</li>
+                    <li>Keep the first-pass evaluation blind: prediction models do not receive processed data, evaluation code, metric weights, teammate model internals, or a hidden held-out simulation until the protocol is locked.</li>
+                    <li>Score methods on more than one error number—numerical skill versus persistence, physical validity (positive density and energy, magnetic divergence, conservation), regional accuracy near the black hole versus the disk and outer halo, and long-horizon stability without oversmoothing turbulence.</li>
+                    <li>Omit Fourier and spectral metrics from the primary ranking so models trained with those losses are not unfairly favored; keep them as optional diagnostics.</li>
+                    <li>Built a dry-run benchmark pipeline with isolated blind packets, frozen hashed submissions, and a separate private evaluator. The pilot validates the protocol and is not a final leaderboard.</li>
+                </ul>
+
                 <h2>Technologies</h2>
-                <p>Python, PyTorch, neural operators, distributed data parallel training, Slurm, MPI, NumPy, scientific computing, and high-performance GPU computing.</p>
+                <p>Python, PyTorch, neural operators, distributed data parallel training, Slurm, MPI, NumPy, scientific computing, high-performance GPU computing, and blind model-evaluation protocol design.</p>
 
                 <h2>Impact</h2>
-                <p>The project models larger time-step transitions to reduce the number of required simulation steps by 10–100× while preserving physical constraints. The multiscale design addresses a central limitation of autoregressive scientific forecasting—small one-step errors compounding over time—and investigates stability across long forecast horizons.</p>
+                <p>The project models larger time-step transitions to reduce the number of required simulation steps by 10–100× while preserving physical constraints. The multiscale design addresses a central limitation of autoregressive scientific forecasting—small one-step errors compounding over time—and investigates stability across long forecast horizons. The benchmarking layer asks a second question: whether a specialized scientific model actually outperforms strong general-purpose systems and simple baselines under the same physical tests.</p>
 
                 <ul class="actions special">
                     <li><a href="https://skai-institute.org/" target="_blank" rel="noopener noreferrer" class="button">SkAI Institute</a></li>
